@@ -38,7 +38,7 @@ def train_val(net, data_loader, train_optimizer):
     total_loss, total_correct_1, total_correct_5, total_num, data_bar = 0.0, 0.0, 0.0, 0, tqdm(data_loader)
     with (torch.enable_grad() if is_train else torch.no_grad()):
         for data, target in data_bar:
-            data, target = data.cuda(non_blocking=True), target.cuda(non_blocking=True)
+            data, target = data.to(device), target.to(device)
             out = net(data)
             loss = loss_criterion(out, target)
 
@@ -62,23 +62,24 @@ def train_val(net, data_loader, train_optimizer):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Linear Evaluation')
-    parser.add_argument('--model_path', type=str, default='results/128_0.5_200_512_500_model.pth',
+    parser.add_argument('--model_path', type=str, default='./results/NT-Xent_128_0.5_200_128_epoch300_model.pth',
                         help='The pretrained model path')
-    parser.add_argument('--batch_size', type=int, default=512, help='Number of images in each mini-batch')
-    parser.add_argument('--epochs', type=int, default=100, help='Number of sweeps over the dataset to train')
+    parser.add_argument('--batch_size', type=int, default=1024, help='Number of images in each mini-batch')
+    parser.add_argument('--epochs', type=int, default=200, help='Number of sweeps over the dataset to train')
 
     args = parser.parse_args()
+    device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     model_path, batch_size, epochs = args.model_path, args.batch_size, args.epochs
     train_data = CIFAR10(root='data', train=True, transform=utils.train_transform, download=True)
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=16, pin_memory=True)
     test_data = CIFAR10(root='data', train=False, transform=utils.test_transform, download=True)
     test_loader = DataLoader(test_data, batch_size=batch_size, shuffle=False, num_workers=16, pin_memory=True)
 
-    model = Net(num_class=len(train_data.classes), pretrained_path=model_path).cuda()
+    model = Net(num_class=len(train_data.classes), pretrained_path=model_path).to(device)
     for param in model.f.parameters():
         param.requires_grad = False
 
-    flops, params = profile(model, inputs=(torch.randn(1, 3, 32, 32).cuda(),))
+    flops, params = profile(model, inputs=(torch.randn(1, 3, 32, 32).to(device),))
     flops, params = clever_format([flops, params])
     print('# Model Params: {} FLOPs: {}'.format(params, flops))
     optimizer = optim.Adam(model.fc.parameters(), lr=1e-3, weight_decay=1e-6)
