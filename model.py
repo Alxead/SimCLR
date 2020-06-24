@@ -5,7 +5,7 @@ from torchvision.models.resnet import resnet50
 
 
 class Model(nn.Module):
-    def __init__(self, feature_dim=128):
+    def __init__(self, feature_dim=128, pretrained_path=None):
         super(Model, self).__init__()
 
         self.f = []
@@ -19,6 +19,8 @@ class Model(nn.Module):
         # projection head
         self.g = nn.Sequential(nn.Linear(2048, 512, bias=False), nn.BatchNorm1d(512),
                                nn.ReLU(inplace=True), nn.Linear(512, feature_dim, bias=True))
+        if pretrained_path is not None:
+            self.load_state_dict(torch.load(pretrained_path, map_location='cpu'), strict=False)
 
     def forward(self, x):
         x = self.f(x)

@@ -18,7 +18,7 @@ class CIFAR10Pair(CIFAR10):
         if self.target_transform is not None:
             target = self.target_transform(target)
 
-        return pos_1, pos_2, target
+        return index, pos_1, pos_2, target
 
 
 train_transform = transforms.Compose([
